@@ -38,12 +38,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleRecording() {
         if isRecording {
             KeystrokeMonitor.shared.stop()
+            MediaMonitor.shared.stop()
             isRecording = false
         } else {
             if !checkAccessibilityPermissions() {
                 return
             }
             KeystrokeMonitor.shared.start()
+            MediaMonitor.shared.start()
             isRecording = true
         }
         updateIcon()
@@ -58,6 +60,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func quitApp() {
         if isRecording {
             KeystrokeMonitor.shared.stop()
+            MediaMonitor.shared.stop()
         }
         DatabaseManager.shared.close()
         NSApplication.shared.terminate(nil)
