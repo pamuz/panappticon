@@ -7,13 +7,12 @@ class ScreenshotMonitor {
 
     private var timer: Timer?
     private var hasCheckedPermission = false
-    private let screenshotDir: URL
 
-    private init() {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        screenshotDir = appSupport.appendingPathComponent("Panappticon/screenshots")
-        try? FileManager.default.createDirectory(at: screenshotDir, withIntermediateDirectories: true)
+    private var screenshotDir: URL {
+        return DiskImageManager.shared.screenshotDirectory
     }
+
+    private init() {}
 
     func start() {
         guard timer == nil else { return }

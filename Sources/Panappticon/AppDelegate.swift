@@ -11,6 +11,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        initializeDiskImage()
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         updateIcon()
         buildMenu()
@@ -39,6 +41,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    private func initializeDiskImage() {
+        guard let password = KeychainManager.shared.getPassword() else {
+            print("No password available for disk image")
+            return
+        }
+        DiskImageManager.shared.initialize(password: password)
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        DiskImageManager.shared.unmount()
+    }
+
     private func updateIcon() {
         if let button = statusItem.button {
             let symbolName = isRecording ? "keyboard.badge.ellipsis" : "keyboard"
@@ -53,6 +67,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let toggleItem = NSMenuItem(title: toggleTitle, action: #selector(toggleRecording), keyEquivalent: "")
         toggleItem.target = self
         menu.addItem(toggleItem)
+
+        let showScreenshotsItem = NSMenuItem(title: "Show Screenshots", action: #selector(showScreenshots), keyEquivalent: "")
+        showScreenshotsItem.target = self
+        menu.addItem(showScreenshotsItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -82,6 +100,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         buildMenu()
     }
 
+    @objc private func showScreenshots() {
+        NSWorkspace.shared.open(DiskImageManager.shared.screenshotDirectory)
+    }
+
     private func checkAccessibilityPermissions() -> Bool {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
         return AXIsProcessTrustedWithOptions(options)
@@ -93,6 +115,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             MediaMonitor.shared.stop()
             ScreenshotMonitor.shared.stop()
         }
+        DiskImageManager.shared.unmount()
         DatabaseManager.shared.close()
         NSApplication.shared.terminate(nil)
     }
