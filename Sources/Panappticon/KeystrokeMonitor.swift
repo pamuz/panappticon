@@ -24,20 +24,26 @@ private func eventTapCallback(
 
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
     let flags = event.flags
+    let character = KeyMapping.characterForEvent(event, keyCode: Int(keyCode))
     
-    let modifierMap: [(CGEventFlags, String)] = [
-        (.maskControl, "Ctrl"),
-        (.maskAlternate, "Alt"),
-        (.maskShift, "Shift"),
-        (.maskCommand, "Cmd")
+    // Determine if this is a "significant" key combination
+    // If only Shift is pressed with a printable character, omit Shift from the modifier string
+    // since Shift is used to produce the character itself (e.g., Shift+' produces ")
+    let hasCommandOrControl = flags.contains(.maskCommand) || flags.contains(.maskControl) || flags.contains(.maskAlternate)
+    let shouldIncludeShift = hasCommandOrControl || character.count > 1 // Multi-char strings are special keys like "Enter", "Tab"
+    
+    let modifierMap: [(CGEventFlags, String, Bool)] = [
+        (.maskControl, "Ctrl", true),
+        (.maskAlternate, "Alt", true),
+        (.maskShift, "Shift", shouldIncludeShift),
+        (.maskCommand, "Cmd", true)
     ]
     
     let modifiers = modifierMap
-        .filter { flags.contains($0.0) }
+        .filter { flags.contains($0.0) && $0.2 }
         .map { $0.1 }
     
-    let keystroke = (modifiers + [KeyMapping.characterForEvent(event, keyCode: Int(keyCode))]).joined(separator: "+")
-    print(keystroke)
+    let keystroke = (modifiers + [character]).joined(separator: "+")
     
     let activeApp = NSWorkspace.shared.frontmostApplication?.localizedName ?? "Unknown"
     let timestamp = timestampFormatter.string(from: Date())
