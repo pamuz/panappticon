@@ -4,7 +4,6 @@ class MediaMonitor {
     static let shared = MediaMonitor()
 
     private var currentTitle: String?
-    private var currentEntryId: Int64?
 
     private var helperProcess: Process?
     private var outputPipe: Pipe?
@@ -20,9 +19,7 @@ class MediaMonitor {
         helperProcess?.terminate()
         helperProcess = nil
         outputPipe = nil
-        closeCurrentEntry()
         currentTitle = nil
-        currentEntryId = nil
     }
 
     private func startHelper() {
@@ -90,35 +87,22 @@ class MediaMonitor {
         let isEmpty = info["empty"] as? Bool ?? false
 
         if isEmpty || title.isEmpty {
-            if currentTitle != nil {
-                closeCurrentEntry()
-                currentTitle = nil
-                currentEntryId = nil
-            }
+            currentTitle = nil
             return
         }
 
         if title != currentTitle {
             print("[MediaMonitor] Now playing: \"\(title)\" by \(artist) [\(sourceApp)]")
-            closeCurrentEntry()
 
             let now = ISO8601DateFormatter().string(from: Date())
-            let rowId = DatabaseManager.shared.insertMedia(
+            DatabaseManager.shared.insertMedia(
                 title: title,
                 artist: artist,
                 album: album,
                 sourceApp: sourceApp,
-                startedAt: now
+                timestamp: now
             )
             currentTitle = title
-            currentEntryId = rowId
-        }
-    }
-
-    private func closeCurrentEntry() {
-        if let entryId = currentEntryId {
-            let now = ISO8601DateFormatter().string(from: Date())
-            DatabaseManager.shared.endMedia(id: entryId, endedAt: now)
         }
     }
 
