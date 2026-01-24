@@ -2,6 +2,11 @@ import Foundation
 import CoreGraphics
 import AppKit
 
+private let timestampFormatter: ISO8601DateFormatter = {
+    let formatter = ISO8601DateFormatter()
+    return formatter
+}()
+
 private func eventTapCallback(
     proxy: CGEventTapProxy,
     type: CGEventType,
@@ -18,10 +23,24 @@ private func eventTapCallback(
     }
 
     let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-    let keystroke = KeyMapping.characterForEvent(event, keyCode: Int(keyCode))
-
+    let flags = event.flags
+    
+    let modifierMap: [(CGEventFlags, String)] = [
+        (.maskControl, "Ctrl"),
+        (.maskAlternate, "Alt"),
+        (.maskShift, "Shift"),
+        (.maskCommand, "Cmd")
+    ]
+    
+    let modifiers = modifierMap
+        .filter { flags.contains($0.0) }
+        .map { $0.1 }
+    
+    let keystroke = (modifiers + [KeyMapping.characterForEvent(event, keyCode: Int(keyCode))]).joined(separator: "+")
+    print(keystroke)
+    
     let activeApp = NSWorkspace.shared.frontmostApplication?.localizedName ?? "Unknown"
-    let timestamp = ISO8601DateFormatter().string(from: Date())
+    let timestamp = timestampFormatter.string(from: Date())
 
     DatabaseManager.shared.insertKeystroke(keystroke: keystroke, timestamp: timestamp, application: activeApp)
 
