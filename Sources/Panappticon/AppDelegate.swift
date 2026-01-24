@@ -6,9 +6,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var isRecording = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard initializeDatabase() else {
+            NSApplication.shared.terminate(nil)
+            return
+        }
+
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         updateIcon()
         buildMenu()
+    }
+
+    private func initializeDatabase() -> Bool {
+        let password: String
+
+        if let stored = KeychainManager.shared.getPassword() {
+            password = stored
+        } else {
+            let result = PasswordPrompt.promptForNewPassword()
+            switch result {
+            case .password(let newPassword):
+                if !KeychainManager.shared.setPassword(newPassword) {
+                    print("Failed to save password to Keychain")
+                    return false
+                }
+                password = newPassword
+            case .cancelled:
+                return false
+            }
+        }
+
+        DatabaseManager.shared.initialize(password: password)
+        return true
     }
 
     private func updateIcon() {
@@ -39,6 +67,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if isRecording {
             KeystrokeMonitor.shared.stop()
             MediaMonitor.shared.stop()
+            ScreenshotMonitor.shared.stop()
             isRecording = false
         } else {
             if !checkAccessibilityPermissions() {
@@ -46,6 +75,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             KeystrokeMonitor.shared.start()
             MediaMonitor.shared.start()
+            ScreenshotMonitor.shared.start()
             isRecording = true
         }
         updateIcon()
@@ -61,6 +91,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if isRecording {
             KeystrokeMonitor.shared.stop()
             MediaMonitor.shared.stop()
+            ScreenshotMonitor.shared.stop()
         }
         DatabaseManager.shared.close()
         NSApplication.shared.terminate(nil)
