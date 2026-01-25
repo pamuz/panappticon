@@ -9,10 +9,6 @@ class KeychainManager {
 
     private init() {}
 
-    func hasPassword() -> Bool {
-        return getPassword() != nil
-    }
-
     func getPassword() -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,

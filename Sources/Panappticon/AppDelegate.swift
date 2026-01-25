@@ -6,47 +6,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var isRecording = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        guard initializeDatabase() else {
+        guard let password = getOrCreatePassword() else {
             NSApplication.shared.terminate(nil)
             return
         }
 
-        initializeDiskImage()
+        DatabaseManager.shared.initialize(password: password)
+        DiskImageManager.shared.initialize(password: password)
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         updateIcon()
         buildMenu()
     }
 
-    private func initializeDatabase() -> Bool {
-        let password: String
-
+    private func getOrCreatePassword() -> String? {
         if let stored = KeychainManager.shared.getPassword() {
-            password = stored
-        } else {
-            let result = PasswordPrompt.promptForNewPassword()
-            switch result {
-            case .password(let newPassword):
-                if !KeychainManager.shared.setPassword(newPassword) {
-                    print("Failed to save password to Keychain")
-                    return false
-                }
-                password = newPassword
-            case .cancelled:
-                return false
+            return stored
+        }
+
+        let result = PasswordPrompt.promptForNewPassword()
+        switch result {
+        case .password(let newPassword):
+            if KeychainManager.shared.setPassword(newPassword) {
+                return newPassword
             }
+            print("Failed to save password to Keychain")
+            return nil
+        case .cancelled:
+            return nil
         }
-
-        DatabaseManager.shared.initialize(password: password)
-        return true
-    }
-
-    private func initializeDiskImage() {
-        guard let password = KeychainManager.shared.getPassword() else {
-            print("No password available for disk image")
-            return
-        }
-        DiskImageManager.shared.initialize(password: password)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
