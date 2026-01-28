@@ -90,9 +90,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if !checkAccessibilityPermissions() {
                 return
             }
-            KeystrokeMonitor.shared.start()
-            MediaMonitor.shared.start()
-            ScreenshotMonitor.shared.start()
+            let settings = SettingsManager.shared
+            if settings.collectKeystrokes {
+                KeystrokeMonitor.shared.start()
+            }
+            if settings.collectMedia {
+                MediaMonitor.shared.start()
+            }
+            if settings.collectScreenshots {
+                ScreenshotMonitor.shared.start()
+            }
             isCollecting = true
         }
         updateIcon()

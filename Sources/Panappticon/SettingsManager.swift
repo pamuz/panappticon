@@ -8,6 +8,9 @@ class SettingsManager {
     private var lastModified: Date?
 
     private(set) var toggleShortcut: KeyboardShortcut = .defaultToggle
+    private(set) var collectKeystrokes: Bool = false
+    private(set) var collectScreenshots: Bool = false
+    private(set) var collectMedia: Bool = false
 
     private init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -32,6 +35,11 @@ class SettingsManager {
             # The shortcut must include at least one modifier.
 
             toggle_collecting = ctrl+opt+p
+
+            # Data collection settings (opt-in, set to true to enable)
+            collect_keystrokes = false
+            collect_screenshots = false
+            collect_media = false
             """
 
         try? defaultConfig.write(to: configURL, atomically: true, encoding: .utf8)
@@ -55,12 +63,23 @@ class SettingsManager {
                 if let shortcut = KeyboardShortcut.parse(value) {
                     toggleShortcut = shortcut
                 }
+            case "collect_keystrokes":
+                collectKeystrokes = parseBool(value)
+            case "collect_screenshots":
+                collectScreenshots = parseBool(value)
+            case "collect_media":
+                collectMedia = parseBool(value)
             default:
                 break
             }
         }
 
         lastModified = try? FileManager.default.attributesOfItem(atPath: configURL.path)[.modificationDate] as? Date
+    }
+
+    private func parseBool(_ value: String) -> Bool {
+        let lowercased = value.lowercased()
+        return lowercased == "true" || lowercased == "yes" || lowercased == "1"
     }
 
     func openConfig() {
