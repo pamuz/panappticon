@@ -1,0 +1,2 @@
+# Compounding Engineering Growth
+As part of compounding my engineering growth. Whenever you complete implementing a feature, create a file under FORPABLO/ (name should be a datestamp and a concie feature slug) that helps me to learn how or why such a thing was implemented. Keep it concise and bitsized, if complex, choose the most important aspect for me to internalize, specially if it's something you suspect I don't know about given our conversations.

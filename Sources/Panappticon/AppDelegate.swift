@@ -3,7 +3,7 @@ import ApplicationServices
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private var isRecording = false
+    private var isCollecting = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard let password = getOrCreatePassword() else {
@@ -17,6 +17,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         updateIcon()
         buildMenu()
+
+        HotkeyManager.shared.start { [weak self] in
+            self?.toggleCollecting()
+        }
     }
 
     private func getOrCreatePassword() -> String? {
@@ -43,7 +47,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateIcon() {
         if let button = statusItem.button {
-            let symbolName = isRecording ? "keyboard.badge.ellipsis" : "keyboard"
+            let symbolName = isCollecting ? "keyboard.badge.ellipsis" : "keyboard"
             button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Panappticon")
         }
     }
@@ -51,14 +55,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func buildMenu() {
         let menu = NSMenu()
 
-        let toggleTitle = isRecording ? "Stop Recording" : "Start Recording"
-        let toggleItem = NSMenuItem(title: toggleTitle, action: #selector(toggleRecording), keyEquivalent: "")
+        let shortcut = SettingsManager.shared.toggleShortcut
+        let toggleTitle = isCollecting ? "Stop Collecting" : "Start Collecting"
+        let toggleItem = NSMenuItem(title: "\(toggleTitle)  \(shortcut.displayString)", action: #selector(toggleCollecting), keyEquivalent: "")
         toggleItem.target = self
         menu.addItem(toggleItem)
+
+        menu.addItem(NSMenuItem.separator())
 
         let showScreenshotsItem = NSMenuItem(title: "Show Screenshots", action: #selector(showScreenshots), keyEquivalent: "")
         showScreenshotsItem.target = self
         menu.addItem(showScreenshotsItem)
+
+        let settingsItem = NSMenuItem(title: "Settings", action: #selector(openSettings), keyEquivalent: "")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
 
         menu.addItem(NSMenuItem.separator())
 
@@ -69,12 +80,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = menu
     }
 
-    @objc private func toggleRecording() {
-        if isRecording {
+    @objc private func toggleCollecting() {
+        if isCollecting {
             KeystrokeMonitor.shared.stop()
             MediaMonitor.shared.stop()
             ScreenshotMonitor.shared.stop()
-            isRecording = false
+            isCollecting = false
         } else {
             if !checkAccessibilityPermissions() {
                 return
@@ -82,7 +93,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             KeystrokeMonitor.shared.start()
             MediaMonitor.shared.start()
             ScreenshotMonitor.shared.start()
-            isRecording = true
+            isCollecting = true
         }
         updateIcon()
         buildMenu()
@@ -92,17 +103,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(DiskImageManager.shared.screenshotDirectory)
     }
 
+    @objc private func openSettings() {
+        SettingsManager.shared.openConfig()
+    }
+
     private func checkAccessibilityPermissions() -> Bool {
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
         return AXIsProcessTrustedWithOptions(options)
     }
 
     @objc private func quitApp() {
-        if isRecording {
+        if isCollecting {
             KeystrokeMonitor.shared.stop()
             MediaMonitor.shared.stop()
             ScreenshotMonitor.shared.stop()
         }
+        HotkeyManager.shared.stop()
         DiskImageManager.shared.unmount()
         DatabaseManager.shared.close()
         NSApplication.shared.terminate(nil)
