@@ -14,6 +14,9 @@ let package = Package(
                 .product(name: "SQLCipher", package: "swift-sqlcipher")
             ],
             path: "Sources/Panappticon",
+            resources: [
+                .process("Resources")
+            ],
             cSettings: [
                 .define("SQLITE_HAS_CODEC")
             ],

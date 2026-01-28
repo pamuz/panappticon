@@ -47,8 +47,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateIcon() {
         if let button = statusItem.button {
-            let symbolName = isCollecting ? "keyboard.badge.ellipsis" : "keyboard"
-            button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Panappticon")
+            if let imageURL = Bundle.module.url(forResource: "panappticon-menubar-icon", withExtension: "png"),
+               let image = NSImage(contentsOf: imageURL) {
+                image.isTemplate = true
+                image.size = NSSize(width: 18, height: 18)
+                button.image = image
+                button.alphaValue = isCollecting ? 1.0 : 0.5
+            } else {
+                let symbolName = isCollecting ? "keyboard.badge.ellipsis" : "keyboard"
+                button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Panappticon")
+            }
         }
     }
 
