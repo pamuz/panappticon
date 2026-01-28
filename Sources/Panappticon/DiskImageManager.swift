@@ -3,25 +3,30 @@ import Foundation
 class DiskImageManager {
     static let shared = DiskImageManager()
 
-    private let appSupportDir: URL
-    private let imagePath: URL
-    private let mountPoint: URL
     private var isMounted = false
+
+    private var dataDir: URL {
+        return SettingsManager.shared.dataPath
+    }
+
+    private var imagePath: URL {
+        return dataDir.appendingPathComponent("screenshots.sparsebundle")
+    }
+
+    private var mountPoint: URL {
+        return dataDir.appendingPathComponent(".screenshots_mount")
+    }
 
     var screenshotDirectory: URL {
         return mountPoint
     }
 
     private init() {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        appSupportDir = appSupport.appendingPathComponent("Panappticon")
-        imagePath = appSupportDir.appendingPathComponent("screenshots.sparsebundle")
-        mountPoint = appSupportDir.appendingPathComponent(".screenshots_mount")
         installSignalHandlers()
     }
 
     func initialize(password: String) {
-        try? FileManager.default.createDirectory(at: appSupportDir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: dataDir, withIntermediateDirectories: true)
 
         if isAlreadyMounted() {
             isMounted = true

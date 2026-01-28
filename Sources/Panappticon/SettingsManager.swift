@@ -11,12 +11,17 @@ class SettingsManager {
     private(set) var collectKeystrokes: Bool = false
     private(set) var collectScreenshots: Bool = false
     private(set) var collectMedia: Bool = false
+    private(set) var dataPath: URL
+
+    private let defaultDataPath: URL
 
     private init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let appDir = appSupport.appendingPathComponent("Panappticon")
         try? FileManager.default.createDirectory(at: appDir, withIntermediateDirectories: true)
         configURL = appDir.appendingPathComponent("config")
+        defaultDataPath = appDir
+        dataPath = appDir
 
         ensureConfigExists()
         reload()
@@ -40,6 +45,10 @@ class SettingsManager {
             collect_keystrokes = false
             collect_screenshots = false
             collect_media = false
+
+            # Storage location for database and screenshots (optional)
+            # If not set, defaults to ~/Library/Application Support/Panappticon
+            # data_path = /path/to/data/folder
             """
 
         try? defaultConfig.write(to: configURL, atomically: true, encoding: .utf8)
@@ -47,6 +56,9 @@ class SettingsManager {
 
     func reload() {
         guard let contents = try? String(contentsOf: configURL, encoding: .utf8) else { return }
+
+        // Reset to defaults before parsing
+        dataPath = defaultDataPath
 
         for line in contents.components(separatedBy: .newlines) {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
@@ -69,6 +81,10 @@ class SettingsManager {
                 collectScreenshots = parseBool(value)
             case "collect_media":
                 collectMedia = parseBool(value)
+            case "data_path":
+                if let path = parsePath(value) {
+                    dataPath = path
+                }
             default:
                 break
             }
@@ -80,6 +96,21 @@ class SettingsManager {
     private func parseBool(_ value: String) -> Bool {
         let lowercased = value.lowercased()
         return lowercased == "true" || lowercased == "yes" || lowercased == "1"
+    }
+
+    private func parsePath(_ value: String) -> URL? {
+        let expanded = NSString(string: value).expandingTildeInPath
+        let url = URL(fileURLWithPath: expanded, isDirectory: true)
+
+        // Create directory if it doesn't exist
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+
+        // Verify it's a valid directory
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else {
+            return nil
+        }
+        return url
     }
 
     func openConfig() {

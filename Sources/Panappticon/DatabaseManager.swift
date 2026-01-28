@@ -33,11 +33,8 @@ class DatabaseManager {
     }
 
     static func databasePath() -> String {
-        let fileManager = FileManager.default
-        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let appDir = appSupport.appendingPathComponent("Panappticon")
-        try? fileManager.createDirectory(at: appDir, withIntermediateDirectories: true)
-        return appDir.appendingPathComponent("panappticon.db").path
+        let dataDir = SettingsManager.shared.dataPath
+        return dataDir.appendingPathComponent("panappticon.db").path
     }
 
     private func isDatabaseEncrypted(atPath path: String) -> Bool {
